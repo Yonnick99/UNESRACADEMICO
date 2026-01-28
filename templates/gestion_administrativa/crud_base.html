@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% load ga_extras %}
+
+{% load static %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm border-0 rounded-4">
+
+
+  <!-- HEADER -->
+  <div class="card-header bg-white border-0">
+    <h5 class="mb-0 fw-semibold">{{ titulo }}</h5>
+  </div>
+
+  <!-- FORMULARIO -->
+  <div class="card-body">
+
+
+    <form method="post" class="row g-3 align-items-end">
+      <div>    
+        <div class="row justify-content-end p-3">
+          <div class="col-md-2">
+            <button type="submit" class="btn btn-success w-100">
+              <i class="bi bi-plus-circle"></i> Agregar
+            </button>
+          </div>
+        </div>
+      </div>
+      {% csrf_token %}
+
+      {% for field in form %}
+        <div class="col-md-3">
+          <label class="form-label">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}
+            <div class="text-danger small">{{ field.errors }}</div>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </form>
+    
+  </div>
+
+  <!-- TABLA -->
+  <div class="table-responsive px-3 pb-3">
+    <table class="table table-hover align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>#</th>
+          {% for field in form %}
+            <th>{{ field.label }}</th>
+          {% endfor %}
+          <th class="text-end">Acciones</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for obj in registros %}
+        <tr>
+          <td>{{ page_obj.start_index|add:forloop.counter0 }}</td>
+
+          {% for field in form %}
+            <td>{{ obj|attr:field.name }}</td>
+          {% endfor %}
+
+          <td class="text-end">
+            <button
+              class="btn btn-sm btn-outline-primary"
+              data-bs-toggle="modal"
+              data-bs-target="#modalEditar"
+              data-id="{{ obj.pk }}"
+              data-url="{% url 'gestion_administrativa:'|add:model_name|add:'_editar' obj.pk %}"
+            >
+              <i class="bi bi-pencil"></i>
+            </button>
+
+            <form
+              method="post"
+              action="{% url 'gestion_administrativa:'|add:model_name|add:'_eliminar' obj.pk %}"
+              class="d-inline"
+            >
+              {% csrf_token %}
+              <button
+                type="submit"
+                class="btn btn-sm btn-outline-danger"
+                onclick="return confirm('¿Eliminar este registro?');"
+              >
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="100%" class="text-center text-muted">
+            No hay registros
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+    {% if page_obj and page_obj.paginator.num_pages > 1 %}
+  <div class="d-flex justify-content-between align-items-center px-3 pb-3">
+    <div class="text-muted small">
+      Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+      ({{ page_obj.paginator.count }} registros)
+    </div>
+
+    <ul class="pagination pagination-sm mb-0">
+
+      {# Anterior #}
+      {% if page_obj.has_previous %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Anterior">
+            &laquo;
+          </a>
+        </li>
+      {% else %}
+        <li class="page-item disabled">
+          <span class="page-link">&laquo;</span>
+        </li>
+      {% endif %}
+
+      {# Ventana corta de páginas (±2) #}
+      {% for num in page_obj.paginator.page_range %}
+        {% if num == page_obj.number %}
+          <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+        {% elif num >= page_obj.number|add:-2 and num <= page_obj.number|add:2 %}
+          <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+        {% endif %}
+      {% endfor %}
+
+      {# Siguiente #}
+      {% if page_obj.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Siguiente">
+            &raquo;
+          </a>
+        </li>
+      {% else %}
+        <li class="page-item disabled">
+          <span class="page-link">&raquo;</span>
+        </li>
+      {% endif %}
+
+    </ul>
+  </div>
+  {% endif %}
+
+</div>
+
+{% include "gestion_administrativa/modal_editar.html" %}
+{% endblock %}

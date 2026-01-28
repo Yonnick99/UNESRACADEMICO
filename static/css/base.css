@@ -1,0 +1,324 @@
+:root{
+  /* Paleta base */
+  --bg: #ffffff;
+  --bg-soft: #ebe8e5;
+
+  --vino: #6d2836;
+  --oro: #bd9743;
+  --gris: #5e5f60;
+
+  --oro-2: #a48a54;
+  --gris-2: #7b7275;
+  --malva: #baa4aa;
+  --cafe: #a4712a;
+
+  --border: rgba(0, 0, 0, 0.016);
+  --shadow: 0 8px 20px rgba(0,0,0,.06);
+
+  --sidebar-w: 280px;
+  --sidebar-w-collapsed: 88px;
+}
+
+.unesr-body{
+  background: var(--bg);
+  color: var(--gris);
+}
+
+.layout{
+  display: flex;
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+/* SIDEBAR */
+.sidebar{
+  width: var(--sidebar-w);
+  background: linear-gradient(180deg, #88878745 50%, var(--bg-soft) 100%);
+  border-right: 1px solid var(--border);
+  box-shadow: none;              /* quitamos sombra global */
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  transition: width .22s ease;
+  overflow: hidden;
+}
+
+.sidebar::after{
+  content: "";
+  position: absolute;
+  top: 0;
+  right: -1px;
+  width: 16px;
+  height: 64px;                  /* igual a la altura del header */
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0), rgba(0,0,0,0));
+  opacity: .35;
+}
+
+.sidebar.is-collapsed{
+  width: var(--sidebar-w-collapsed);
+}
+
+.sidebar__brand{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 16px 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.brand__icon{
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: rgba(109,40,54,.12);
+  color: var(--vino);
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 6px 14px rgba(0,0,0,.06);
+  transition: background .2s ease, transform .15s ease;
+}
+.brand__icon:hover{
+  background: rgba(109,40,54,.20);
+  transform: translateY(-1px);
+}
+
+.brand__icon:active{
+  transform: scale(.96);
+}
+.brand__title{
+  font-weight: 700;
+  color: var(--vino);
+  letter-spacing: .5px;
+}
+
+.brand__subtitle{
+  font-size: .85rem;
+  color: var(--gris-2);
+}
+
+.sidebar.is-collapsed .brand__text{
+  display: none;
+}
+
+.sidebar__nav{
+  padding: 12px 10px;
+  overflow-y: auto;
+  scrollbar-width: none;        /* Firefox */
+  -ms-overflow-style: none;     /* IE/Edge */
+}
+
+.sidebar__nav::-webkit-scrollbar{
+  display: none;
+}
+
+.nav__section{
+  font-size: .75rem;
+  color: rgba(94,95,96,.85);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  padding: 14px 12px 6px 12px;
+}
+
+.nav__item,
+.nav__subitem{
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  color: #2f3031;
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition: background .15s ease, border-color .15s ease, transform .12s ease;
+  background: transparent;
+}
+
+.nav__item i,
+.nav__subitem i{
+  color: #111; /* negro */
+  font-size: 1.05rem;
+  width: 20px;
+  text-align: center;
+}
+
+.nav__item:hover,
+.nav__subitem:hover{
+  background: rgba(189,151,67,.12);
+  border-color: rgba(189,151,67,.22);
+  transform: translateY(-1px);
+}
+
+.nav__item.active,
+.nav__subitem.active{
+  background: rgba(109,40,54,.10);
+  border-color: rgba(109,40,54,.18);
+}
+
+.nav__item--collapse{
+  border: none;
+  background: transparent;
+  text-align: left;
+}
+
+.nav__item-left{
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nav__chev{
+  margin-left: auto;
+  color: rgba(94,95,96,.85);
+  transition: transform .2s ease;
+}
+
+.nav__item[aria-expanded="false"] .nav__chev{
+  transform: rotate(-90deg);
+}
+
+.nav__subitem{
+  margin-left: 8px;
+  padding-left: 16px;
+}
+
+.sidebar.is-collapsed .nav__label{
+  display: none;
+}
+
+.sidebar__footer{
+  margin-top: auto;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  color: rgba(94,95,96,.85);
+  background: rgba(255,255,255,.65);
+}
+
+/* MAIN */
+.main{
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.topbar{
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: #fff;
+  box-shadow: 0 10px 22px rgba(0,0,0,.04);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.topbar__left{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.topbar__btn{
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 18px rgba(0,0,0,.04);
+}
+
+.topbar__brand{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.topbar__logo{
+  width: 38px;
+  height: 38px;
+  border-radius: 14px;
+  object-fit: cover;
+  border: 1px solid rgba(0,0,0,.08);
+  box-shadow: 0 8px 18px rgba(0,0,0,.06);
+}
+
+.topbar__title-main{
+  font-weight: 700;
+  color: var(--vino);
+  line-height: 1.05;
+}
+
+.topbar__title-sub{
+  font-size: .82rem;
+  color: rgba(94,95,96,.85);
+  line-height: 1.05;
+}
+
+.content{
+  padding: 2px 1px;
+}
+
+.content__container{
+  border-radius: 18px;
+  background: #fff;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  padding: 18px;
+}
+
+/* Responsive */
+@media (max-width: 992px){
+  .sidebar{
+    position: fixed;
+    left: 0;
+    z-index: 20;
+    transform: translateX(0);
+  }
+  .sidebar.is-collapsed{
+    transform: translateX(-100%);
+    width: var(--sidebar-w);
+  }
+}
+.topbar__brand{
+  display: flex;
+  align-items: center;   /* centra verticalmente logo y texto */
+  gap: 12px;
+  min-width: 0;
+}
+
+
+/* ===== Sidebar colapsado: solo iconos ===== */
+
+.sidebar.is-collapsed .nav__label,
+.sidebar.is-collapsed .nav__section,
+.sidebar.is-collapsed .brand__text,
+.sidebar.is-collapsed .sidebar__footer small{
+  display: none;
+}
+
+/* Centrar iconos cuando está colapsado */
+.sidebar.is-collapsed .nav__item,
+.sidebar.is-collapsed .nav__subitem{
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* Ajuste visual de iconos */
+.sidebar.is-collapsed .nav__item i,
+.sidebar.is-collapsed .nav__subitem i{
+  font-size: 1.2rem;
+}
+
+/* Evita que el chevron se vea */
+.sidebar.is-collapsed .nav__chev{
+  display: none;
+}

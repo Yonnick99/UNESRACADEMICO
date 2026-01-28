@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm border-0 rounded-4">
+
+  <!-- HEADER -->
+  <div class="card-header bg-white border-0 d-flex align-items-center justify-content-between">
+    <h5 class="mb-0 fw-semibold">{{ titulo }}</h5>
+    <span class="text-muted small">
+      Resultados: {{ page_obj.paginator.count }}
+    </span>
+  </div>
+
+  <!-- FILTROS (CONSULTA) -->
+  <div class="card-body">
+    <form method="get" class="row g-3 align-items-end" id="form-consulta">
+
+      <!-- Selector de componente -->
+      <div class="col-md-3">
+        <label class="form-label">Selector</label>
+        <select class="form-select" id="select-consulta" aria-label="Seleccionar componente">
+          <option value="{% url 'gestion_administrativa:consulta' 'estatus' %}" {% if clave == 'estatus' %}selected{% endif %}>Estatus</option>
+          <option value="{% url 'gestion_administrativa:consulta' 'carreras' %}" {% if clave == 'carreras' %}selected{% endif %}>Carreras</option>
+          <option value="{% url 'gestion_administrativa:consulta' 'menciones' %}" {% if clave == 'menciones' %}selected{% endif %}>Menciones</option>
+          <option value="{% url 'gestion_administrativa:consulta' 'asignaturas' %}" {% if clave == 'asignaturas' %}selected{% endif %}>Asignaturas</option>
+          <option value="{% url 'gestion_administrativa:consulta' 'pisos' %}" {% if clave == 'pisos' %}selected{% endif %}>Pisos</option>
+          <option value="{% url 'gestion_administrativa:consulta' 'aulas' %}" {% if clave == 'aulas' %}selected{% endif %}>Aulas</option>
+          <option value="{% url 'gestion_administrativa:consulta' 'periodos' %}" {% if clave == 'periodos' %}selected{% endif %}>Períodos</option>
+          <option value="{% url 'gestion_administrativa:consulta' 'tipos-materia' %}" {% if clave == 'tipos-materia' %}selected{% endif %}>Tipos de Materia</option>
+          <option value="{% url 'gestion_administrativa:consulta' 'tipos-contrato' %}" {% if clave == 'tipos-contrato' %}selected{% endif %}>Tipos de Contrato</option>
+        </select>
+        <div class="form-text text-muted">
+          Selecciona el catálogo a consultar.
+        </div>
+      </div>
+
+      <!-- Búsqueda -->
+      <div class="col-md-4">
+        <label class="form-label">Componente</label>
+        <input
+          type="text"
+          name="q"
+          id="input-busqueda"
+          class="form-control"
+          value="{{ q_actual|default:'' }}"
+          placeholder="Buscar..."
+        >
+        <div class="form-text text-muted" id="hint-busqueda">
+          Filtra resultados por término de búsqueda.
+        </div>
+      </div>
+
+      <div class="col-12 d-flex justify-content-end gap-2">
+        <a class="btn btn-outline-secondary"
+           href="{% url 'gestion_administrativa:consulta' clave %}">
+          <i class="bi bi-x-circle"></i> Limpiar
+        </a>
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-search"></i> Consultar
+        </button>
+      </div>
+
+    </form>
+  </div>
+
+  <!-- TABLA -->
+  <div class="table-responsive px-3 pb-2">
+    <table class="table table-hover align-middle mb-0">
+    <thead class="table-light">
+      <tr>
+        <th style="width:80px;">#</th>
+
+        {% for col in columnas %}
+          {% with campo=col.orden %}
+            {% if campo %}
+              {% if campo == orden_actual %}
+                {% if dir_actual == "asc" %}
+                  <th>
+                    <a class="text-decoration-none text-dark"
+                      href="?page=1&q={{ q_actual|urlencode }}&orden={{ campo }}&dir=desc">
+                      {{ col.label }} <i class="bi bi-sort-down"></i>
+                    </a>
+                  </th>
+                {% else %}
+                  <th>
+                    <a class="text-decoration-none text-dark"
+                      href="?page=1&q={{ q_actual|urlencode }}&orden={{ campo }}&dir=asc">
+                      {{ col.label }} <i class="bi bi-sort-up"></i>
+                    </a>
+                  </th>
+                {% endif %}
+              {% else %}
+                <th>
+                  <a class="text-decoration-none text-dark"
+                    href="?page=1&q={{ q_actual|urlencode }}&orden={{ campo }}&dir=asc">
+                    {{ col.label }} <i class="bi bi-filter"></i>
+                  </a>
+                </th>
+              {% endif %}
+            {% else %}
+              <th>{{ col.label }}</th>
+            {% endif %}
+          {% endwith %}
+        {% endfor %}
+      </tr>
+    </thead>
+
+      <tbody>
+        {% for row in filas %}
+          <tr>
+            <td>{{ page_obj.start_index|add:forloop.counter0 }}</td>
+            {% for val in row.celdas %}
+              <td>{{ val }}</td>
+            {% endfor %}
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="100%" class="text-center text-muted py-4">
+              No hay resultados para mostrar.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- PAGINACIÓN -->
+  <div class="card-footer bg-white border-0 d-flex align-items-center justify-content-between">
+    <div class="text-muted small">
+      Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+    </div>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <nav aria-label="Paginación">
+      <ul class="pagination mb-0">
+
+        <!-- Prev -->
+        {% if page_obj.has_previous %}
+          <li class="page-item">
+            <a class="page-link"
+               href="?page={{ page_obj.previous_page_number }}&q={{ q_actual|urlencode }}&orden={{ orden_actual }}&dir={{ dir_actual }}">
+              Anterior
+            </a>
+          </li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">Anterior</span></li>
+        {% endif %}
+
+        <!-- Números -->
+        {% for num in page_obj.paginator.page_range %}
+          {% if num == page_obj.number %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+          {% else %}
+            <li class="page-item">
+              <a class="page-link"
+                 href="?page={{ num }}&q={{ q_actual|urlencode }}&orden={{ orden_actual }}&dir={{ dir_actual }}">
+                {{ num }}
+              </a>
+            </li>
+          {% endif %}
+        {% endfor %}
+
+        <!-- Next -->
+        {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link"
+               href="?page={{ page_obj.next_page_number }}&q={{ q_actual|urlencode }}&orden={{ orden_actual }}&dir={{ dir_actual }}">
+              Siguiente
+            </a>
+          </li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">Siguiente</span></li>
+        {% endif %}
+
+      </ul>
+    </nav>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

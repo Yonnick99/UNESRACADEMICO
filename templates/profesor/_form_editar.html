@@ -1,0 +1,71 @@
+{# profesor/templates/profesor/_form_editar.html #}
+
+<form method="post" action="{{ action_url }}">
+  {% csrf_token %}
+
+  <div class="row g-3">
+
+    <div class="col-md-6">
+      <label class="form-label">Estatus del Facilitador</label>
+      <select name="id_estatu" class="form-select">
+        {% for s in estatus_qs %}
+          <option value="{{ s.pk }}" {% if obj.id_estatu_id == s.pk %}selected{% endif %}>
+            {{ s.nombre }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-6">
+      <label class="form-label">Fecha de Registro</label>
+      <input type="date" name="fecha_creacion" class="form-control"
+             value="{{ obj.fecha_creacion|date:'Y-m-d' }}">
+    </div>
+
+    {% if contrato %}
+      <hr class="my-2">
+
+      <div class="col-md-6">
+        <label class="form-label">Tipo de Contrato</label>
+        <select name="id_tipo_Contrato" class="form-select">
+          {% for c in contratos_qs %}
+            <option value="{{ c.pk }}" {% if contrato.id_contrato_id == c.pk %}selected{% endif %}>
+              {{ c.nombre }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label">Estatus del Contrato</label>
+        <select name="id_estatu_contrato" class="form-select">
+          {% for s in estatus_qs %}
+            <option value="{{ s.pk }}" {% if contrato.id_estatu_id == s.pk %}selected{% endif %}>
+              {{ s.nombre }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label">Horas Académicas</label>
+        <input type="number" name="horas_academicas" class="form-control"
+               value="{{ contrato.horas_academicas|default_if_none:'' }}">
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label">Fecha Inicio</label>
+        <input type="date" name="fecha_inicio" class="form-control"
+               value="{{ contrato.fecha_inicio|date:'Y-m-d' }}">
+      </div>
+    {% endif %}
+
+  </div>
+
+  <div class="d-flex justify-content-end gap-2 mt-4">
+    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+    <button type="submit" class="btn btn-primary">
+      <i class="bi bi-save"></i> Guardar
+    </button>
+  </div>
+</form>

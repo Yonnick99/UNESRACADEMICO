@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Permisos por Rol{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm border-0 rounded-4">
+
+  <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+    <h5 class="mb-0 fw-semibold">Permisos por Rol</h5>
+  </div>
+
+  <div class="card-body">
+    <form method="get" class="row g-3 align-items-end mb-3">
+      <div class="col-md-4">
+        <label class="form-label">Rol</label>
+        <select name="rol" class="form-select" onchange="this.form.submit()">
+          {% for r in roles %}
+            <option value="{{ r.name }}" {% if rol and rol.name == r.name %}selected{% endif %}>
+              {{ r.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+    </form>
+
+    {% if rol %}
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="rol" value="{{ rol.name }}">
+
+      {% for app, perms in perms_por_app.items %}
+        {# Usamos un identificador seguro para el toggle (sin espacios ni símbolos raros) #}
+        {% with app_key=app|slugify %}
+        <div class="border rounded-3 p-3 mb-3">
+
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div>
+              <strong>
+                {# Si en el view pasas un mapa app_es, lo mostramos; si no, cae a app #}
+                {% if app_es and app_es.app %}
+                  {{ app_es.app }}
+                {% else %}
+                  {{ app|capfirst }}
+                {% endif %}
+              </strong>
+              <div class="text-muted small">
+                {% if app_es and app_es.app %}
+                  {{ app }}
+                {% else %}
+                  {{ app }}
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="d-flex gap-2">
+              <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleApp('{{ app_key }}', true)">
+                Marcar todo
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleApp('{{ app_key }}', false)">
+                Quitar todo
+              </button>
+            </div>
+          </div>
+
+          <div class="row">
+            {% for p in perms %}
+              <div class="col-md-6 mb-2">
+                <div class="form-check">
+                  <input
+                    class="form-check-input perm-{{ app_key }}"
+                    type="checkbox"
+                    name="perms"
+                    value="{{ p.id }}"
+                    id="perm_{{ p.id }}"
+                    {% if p.id in rol_perm_ids %}checked{% endif %}
+                  >
+
+                  <label class="form-check-label" for="perm_{{ p.id }}">
+                    <div class="fw-semibold">
+                      {# Label amigable #}
+                      {% if perm_meta and perm_meta.p.id %}
+                        {{ perm_meta.p.id.label }}
+                      {% else %}
+                        {{ p.name }}
+                      {% endif %}
+                    </div>
+
+                    <div class="text-muted small">
+                      {# Ayuda amigable #}
+                      {% if perm_meta and perm_meta.p.id %}
+                        {{ perm_meta.p.id.help }}
+                      {% else %}
+                        {{ app }}.{{ p.codename }}
+                      {% endif %}
+                    </div>
+                  </label>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+
+        </div>
+        {% endwith %}
+      {% endfor %}
+
+      <div class="d-flex justify-content-end">
+        <button class="btn btn-primary">
+          <i class="bi bi-save"></i> Guardar Permisos
+        </button>
+      </div>
+    </form>
+    {% else %}
+      <div class="text-muted">No hay rol seleccionado.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleApp(appKey, checked) {
+  document.querySelectorAll('.perm-' + appKey).forEach(cb => cb.checked = checked);
+}
+</script>
+{% endblock %}

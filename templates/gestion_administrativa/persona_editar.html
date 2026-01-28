@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm border-0 rounded-4">
+  <div class="card-header bg-white border-0">
+    <h5 class="mb-0 fw-semibold">{{ titulo }}</h5>
+  </div>
+
+  <div class="card-body">
+    <form method="post" class="row g-3">
+      {% csrf_token %}
+
+      {% for field in form %}
+        <div class="col-md-4">
+          <label class="form-label">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}
+            <div class="text-danger small">{{ field.errors }}</div>
+          {% endif %}
+        </div>
+      {% endfor %}
+
+      <div class="col-12 d-flex justify-content-end gap-2">
+        <a class="btn btn-outline-secondary"
+           href="{% url 'gestion_administrativa:persona' %}{% if request.GET.page %}?page={{ request.GET.page }}{% endif %}">
+          Volver
+        </a>
+        <button class="btn btn-primary">
+          <i class="bi bi-save"></i> Guardar cambios
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,395 @@
+{# templates/seguridad/home_administrativo.html #}
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Home Administrativo | UNESR Académico{% endblock %}
+
+{% block content %}
+<style>
+  .landing-wrap { max-width: 1200px; margin: 0 auto; }
+  .hero-card {
+    background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(248,249,250,0.95));
+    border: 1px solid rgba(0,0,0,.06);
+  }
+  .hero-badge {
+    display: inline-flex;
+    gap: .5rem;
+    align-items: center;
+    padding: .35rem .75rem;
+    border-radius: 999px;
+    background: rgba(13,110,253,.08);
+    color: #0d6efd;
+    font-weight: 600;
+    font-size: .875rem;
+  }
+  .soft-card {
+    border: 1px solid rgba(0,0,0,.06);
+    background: #fff;
+  }
+  .soft-muted { color: rgba(0,0,0,.6); }
+  .icon-pill {
+    width: 44px; height: 44px;
+    border-radius: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,.04);
+  }
+  .section-title { max-width: 760px; }
+  .step-num {
+    width: 34px; height: 34px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    background: rgba(13,110,253,.10);
+    color: #0d6efd;
+  }
+  .mini-kpi {
+    border-left: 3px solid rgba(13,110,253,.35);
+    padding-left: .9rem;
+  }
+  .anchor-offset { scroll-margin-top: 90px; }
+</style>
+
+<div class="landing-wrap">
+
+  <!-- HERO -->
+  <div class="card hero-card shadow-sm border-0 rounded-4 mb-4">
+    <div class="card-body p-4 p-lg-5">
+
+      <div class="d-flex flex-column flex-lg-row align-items-start align-items-lg-center justify-content-between gap-3 mb-4">
+        <div>
+          <span class="hero-badge">
+            <i class="bi bi-shield-check"></i>
+            Home Administrativo
+          </span>
+          <h2 class="mt-3 mb-2 fw-bold">UNESR Académico</h2>
+          <p class="soft-muted mb-0">
+            Panel instructivo para operar el sistema con flujo claro: componentes → personas → roles → procesos académicos.
+          </p>
+        </div>
+
+        <div class="d-flex gap-2">
+          <a href="#guia" class="btn btn-primary">
+            <i class="bi bi-compass"></i> Guía rápida
+          </a>
+          <a href="#modulos" class="btn btn-outline-secondary">
+            <i class="bi bi-grid"></i> Ver módulos
+          </a>
+        </div>
+      </div>
+
+      <!-- Accesos rápidos (sin datos de BD) -->
+      <div class="row g-3">
+        <div class="col-12 col-lg-4">
+          <div class="card soft-card rounded-4 h-100">
+            <div class="card-body">
+              <div class="d-flex gap-3">
+                <div class="icon-pill"><i class="bi bi-sliders fs-5"></i></div>
+                <div>
+                  <h6 class="mb-1 fw-semibold">Gestión Administrativa</h6>
+                  <div class="soft-muted small">Componentes, consultas y configuración operativa.</div>
+                  <div class="mt-3 d-flex flex-wrap gap-2">
+                    <a class="btn btn-sm btn-outline-primary" href="{% url 'gestion_administrativa:consulta' 'estatus' %}">
+                      <i class="bi bi-search"></i> Consultas
+                    </a>
+                    <a class="btn btn-sm btn-outline-primary" href="/gestion_administrativa/carreras/">
+                      <i class="bi bi-pencil-square"></i> Componentes
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-lg-4">
+          <div class="card soft-card rounded-4 h-100">
+            <div class="card-body">
+              <div class="d-flex gap-3">
+                <div class="icon-pill"><i class="bi bi-people fs-5"></i></div>
+                <div>
+                  <h6 class="mb-1 fw-semibold">Personas</h6>
+                  <div class="soft-muted small">Crear persona → usuario automático → perfiles (participante/profesor).</div>
+                  <div class="mt-3 d-flex flex-wrap gap-2">
+                    <a class="btn btn-sm btn-outline-primary" href="{% url 'gestion_administrativa:persona' %}">
+                      <i class="bi bi-person-plus"></i> Gestión de Personas
+                    </a>
+                    <span class="small soft-muted">Aquí inicia todo.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-lg-4">
+          <div class="card soft-card rounded-4 h-100">
+            <div class="card-body">
+              <div class="d-flex gap-3">
+                <div class="icon-pill"><i class="bi bi-key fs-5"></i></div>
+                <div>
+                  <h6 class="mb-1 fw-semibold">Seguridad (RBAC)</h6>
+                  <div class="soft-muted small">Roles (grupos) y permisos por módulo. Asignación a usuarios existentes.</div>
+                  <div class="mt-3 d-flex flex-wrap gap-2">
+                    <a class="btn btn-sm btn-outline-primary" href="{% url 'seguridad:roles_permisos' %}">
+                      <i class="bi bi-shield-lock"></i> Permisos por Rol
+                    </a>
+                    <a class="btn btn-sm btn-outline-primary" href="{% url 'seguridad:usuarios_roles' %}">
+                      <i class="bi bi-person-gear"></i> Roles por Usuario
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div> <!-- /row -->
+
+      <!-- KPIs informativos (sin BD) -->
+      <div class="row g-3 mt-3">
+        <div class="col-12 col-md-4">
+          <div class="mini-kpi">
+            <div class="fw-bold">Operación guiada</div>
+            <div class="soft-muted small">Flujo recomendado para evitar inconsistencias.</div>
+          </div>
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="mini-kpi">
+            <div class="fw-bold">Roles múltiples</div>
+            <div class="soft-muted small">Un usuario puede ser participante y profesor simultáneamente.</div>
+          </div>
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="mini-kpi">
+            <div class="fw-bold">Consulta reutilizable</div>
+            <div class="soft-muted small">Vista unificada para consultas de componentes (solo lectura).</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- GUÍA RÁPIDA -->
+  <div id="guia" class="anchor-offset card soft-card shadow-sm border-0 rounded-4 mb-4">
+    <div class="card-body p-4 p-lg-5">
+      <div class="section-title mb-4">
+        <h4 class="fw-bold mb-2">Guía rápida de operación</h4>
+        <p class="soft-muted mb-0">
+          Este orden reduce errores y mantiene coherencia entre perfiles, roles y procesos.
+        </p>
+      </div>
+
+      <div class="row g-4">
+        <div class="col-12 col-lg-6">
+          <div class="d-flex gap-3">
+            <span class="step-num">1</span>
+            <div>
+              <h6 class="fw-semibold mb-1">Configurar componentes</h6>
+              <p class="soft-muted mb-2">
+                Mantén actualizados estatus, carreras, menciones, asignaturas, períodos, tipos de contrato, pisos y aulas.
+              </p>
+              <a class="btn btn-sm btn-outline-secondary" href="{% url 'gestion_administrativa:consulta' 'estatus' %}">
+                <i class="bi bi-search"></i> Ir a consultas
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-lg-6">
+          <div class="d-flex gap-3">
+            <span class="step-num">2</span>
+            <div>
+              <h6 class="fw-semibold mb-1">Crear personas (genera usuario)</h6>
+              <p class="soft-muted mb-2">
+                Cada persona crea su usuario y perfil base. Luego se asignan roles y perfiles académicos.
+              </p>
+              <a class="btn btn-sm btn-outline-secondary" href="{% url 'gestion_administrativa:persona' %}">
+                <i class="bi bi-person-plus"></i> Gestión de Personas
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-lg-6">
+          <div class="d-flex gap-3">
+            <span class="step-num">3</span>
+            <div>
+              <h6 class="fw-semibold mb-1">Asignar roles (RBAC)</h6>
+              <p class="soft-muted mb-2">
+                Define permisos por rol y asigna roles a usuarios por cédula. El usuario hereda permisos del grupo.
+              </p>
+              <div class="d-flex gap-2 flex-wrap">
+                <a class="btn btn-sm btn-outline-secondary" href="{% url 'seguridad:roles_permisos' %}">
+                  <i class="bi bi-shield-lock"></i> Permisos por Rol
+                </a>
+                <a class="btn btn-sm btn-outline-secondary" href="{% url 'seguridad:usuarios_roles' %}">
+                  <i class="bi bi-person-gear"></i> Roles por Usuario
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-lg-6">
+          <div class="d-flex gap-3">
+            <span class="step-num">4</span>
+            <div>
+              <h6 class="fw-semibold mb-1">Crear perfiles académicos</h6>
+              <p class="soft-muted mb-2">
+                Desde persona se deriva participante (estudiante) o profesor (facilitador). Un usuario puede tener ambos.
+              </p>
+              <div class="d-flex gap-2 flex-wrap">
+                <a class="btn btn-sm btn-outline-secondary" href="{% url 'participante:estudiante' %}">
+                  <i class="bi bi-mortarboard"></i> Estudiantes
+                </a>
+                <a class="btn btn-sm btn-outline-secondary" href="{% url 'profesor:facilitador' %}">
+                  <i class="bi bi-person-badge"></i> Facilitadores
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="my-4">
+
+      <div class="alert alert-light border mb-0">
+        <div class="d-flex gap-2 align-items-start">
+          <i class="bi bi-info-circle"></i>
+          <div>
+            <div class="fw-semibold">Nota operativa</div>
+            <div class="small soft-muted">
+              En este Home evitamos mostrar información sensible o interna. Todo dato operativo real debe consultarse desde los módulos correspondientes.
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MÓDULOS -->
+  <div id="modulos" class="anchor-offset card soft-card shadow-sm border-0 rounded-4 mb-4">
+    <div class="card-body p-4 p-lg-5">
+      <div class="section-title mb-4">
+        <h4 class="fw-bold mb-2">Módulos del sistema</h4>
+        <p class="soft-muted mb-0">
+          Accesos y propósito de cada módulo. El menú se muestra según permisos.
+        </p>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-12 col-md-6 col-lg-3">
+          <div class="card soft-card rounded-4 h-100">
+            <div class="card-body">
+              <div class="icon-pill mb-3"><i class="bi bi-sliders fs-5"></i></div>
+              <h6 class="fw-semibold">Gestión Administrativa</h6>
+              <p class="soft-muted small mb-3">Componentes, consultas, estructura base y configuración.</p>
+              <div class="d-grid gap-2">
+                <a class="btn btn-sm btn-outline-primary" href="/gestion_administrativa/carreras/">
+                  Componentes
+                </a>
+                <a class="btn btn-sm btn-outline-primary" href="{% url 'gestion_administrativa:consulta' 'estatus' %}">
+                  Consulta
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-6 col-lg-3">
+          <div class="card soft-card rounded-4 h-100">
+            <div class="card-body">
+              <div class="icon-pill mb-3"><i class="bi bi-people fs-5"></i></div>
+              <h6 class="fw-semibold">Personas</h6>
+              <p class="soft-muted small mb-3">Registro base + usuario automático. Punto de partida del sistema.</p>
+              <div class="d-grid">
+                <a class="btn btn-sm btn-outline-primary" href="{% url 'gestion_administrativa:persona' %}">
+                  Gestión de Personas
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-6 col-lg-3">
+          <div class="card soft-card rounded-4 h-100">
+            <div class="card-body">
+              <div class="icon-pill mb-3"><i class="bi bi-mortarboard fs-5"></i></div>
+              <h6 class="fw-semibold">Participantes</h6>
+              <p class="soft-muted small mb-3">Alta académica, carrera/mención y control operativo del estudiante.</p>
+              <div class="d-grid">
+                <a class="btn btn-sm btn-outline-primary" href="{% url 'participante:estudiante' %}">
+                  Estudiantes
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-6 col-lg-3">
+          <div class="card soft-card rounded-4 h-100">
+            <div class="card-body">
+              <div class="icon-pill mb-3"><i class="bi bi-person-badge fs-5"></i></div>
+              <h6 class="fw-semibold">Profesores</h6>
+              <p class="soft-muted small mb-3">Alta de facilitador, contrato, estatus y administración operativa.</p>
+              <div class="d-grid">
+                <a class="btn btn-sm btn-outline-primary" href="{% url 'profesor:facilitador' %}">
+                  Facilitadores
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3 mt-2">
+        <div class="col-12 col-lg-6">
+          <div class="card soft-card rounded-4">
+            <div class="card-body">
+              <h6 class="fw-semibold mb-1">Seguridad & configuración</h6>
+              <p class="soft-muted small mb-3">
+                Gestión de roles y permisos. El control central del acceso al sistema.
+              </p>
+              <div class="d-flex gap-2 flex-wrap">
+                <a class="btn btn-sm btn-outline-secondary" href="{% url 'seguridad:roles_permisos' %}">
+                  Permisos por Rol
+                </a>
+                <a class="btn btn-sm btn-outline-secondary" href="{% url 'seguridad:usuarios_roles' %}">
+                  Roles por Usuario
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-lg-6">
+          <div class="card soft-card rounded-4">
+            <div class="card-body">
+              <h6 class="fw-semibold mb-1">Buenas prácticas operativas</h6>
+              <ul class="small soft-muted mb-0">
+                <li>Primero componentes, luego personas, luego roles, luego perfiles.</li>
+                <li>Evita duplicidad: usa buscador por cédula para localizar personas.</li>
+                <li>Las funcionalidades dependen de permisos del grupo asignado.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- FOOTER SIMPLE -->
+  <div class="text-center small soft-muted mt-4 mb-2">
+    UNESR Académico — Home Administrativo
+  </div>
+
+</div>
+{% endblock %}

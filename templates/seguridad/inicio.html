@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Inicio{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm border-0 rounded-4">
+  <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+    <h5 class="mb-0 fw-semibold">Inicio</h5>
+    <a class="btn btn-outline-danger btn-sm" href="{% url 'seguridad:logout' %}">
+      <i class="bi bi-box-arrow-right"></i> Salir
+    </a>
+  </div>
+
+  <div class="card-body">
+    <p class="mb-2">Bienvenido: <strong>{{ request.user.username }}</strong></p>
+    <p class="text-muted mb-0">Roles (grupos): {{ grupos|join:", " }}</p>
+  </div>
+</div>
+{% endblock %}

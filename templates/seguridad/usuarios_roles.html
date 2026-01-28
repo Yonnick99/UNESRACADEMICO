@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Usuarios - Roles{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm border-0 rounded-4">
+
+  <div class="card-header bg-white border-0">
+    <h5 class="mb-0 fw-semibold">Usuarios: Asignar Roles</h5>
+  </div>
+
+  <div class="card-body">
+
+    <!-- Buscador por cédula -->
+    <div class="row g-3 align-items-end mb-3">
+      <div class="col-md-4 position-relative">
+        <label class="form-label">Buscar por cédula</label>
+        <input type="text" id="cedulaSearchSeg" class="form-control" placeholder="Escribe mínimo 5 dígitos...">
+        <div id="cedulaResultsSeg" class="list-group position-absolute w-100" style="z-index: 1050; display:none;"></div>
+      </div>
+
+      <div class="col-md-2">
+        <button type="button" id="btnCargarPersonaSeg" class="btn btn-primary w-100" disabled>
+          <i class="bi bi-search"></i> Cargar
+        </button>
+      </div>
+
+      <input type="hidden" id="personaIdHiddenSeg">
+    </div>
+
+    <!-- Datos visuales -->
+    <div class="row g-3 mt-2 mb-4">
+      <div class="col-md-2">
+        <label class="form-label">ID Persona</label>
+        <input type="text" id="persona_id_seg" class="form-control" disabled>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Nombre</label>
+        <input type="text" id="persona_nombre_seg" class="form-control" disabled>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Apellido</label>
+        <input type="text" id="persona_apellido_seg" class="form-control" disabled>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Cédula</label>
+        <input type="text" id="persona_cedula_seg" class="form-control" disabled>
+      </div>
+    </div>
+
+    {% if user %}
+      <div class="alert alert-light border">
+        <div><strong>Usuario:</strong> {{ user.username }} {% if user.email %}({{ user.email }}){% endif %}</div>
+        <div><strong>Activo:</strong> {{ user.is_active }}</div>
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="persona_id" value="{{ persona.id_persona }}">
+
+        <div class="border rounded-3 p-3 mb-3">
+          <strong class="d-block mb-2">Roles (Grupos)</strong>
+          <div class="row">
+            {% for r in roles %}
+              <div class="col-md-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="roles" value="{{ r.name }}"
+                         id="rol_{{ r.id }}"
+                         {% if r in user.groups.all %}checked{% endif %}>
+                  <label class="form-check-label" for="rol_{{ r.id }}">{{ r.name }}</label>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-end">
+          <button class="btn btn-primary">
+            <i class="bi bi-save"></i> Guardar Roles
+          </button>
+        </div>
+      </form>
+
+    {% elif persona %}
+      <div class="alert alert-warning">
+        Esta persona no tiene usuario asociado (PerfilUsuario → user).
+      </div>
+    {% else %}
+      <div class="text-muted">
+        Busca una persona por cédula para cargar su usuario y asignar roles.
+      </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/seguridad_usuarios_roles.js' %}"></script>
+{% endblock %}

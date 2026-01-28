@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Iniciar sesión{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-5 col-lg-4">
+    <div class="card shadow-sm border-0 rounded-4">
+      <div class="card-header bg-white border-0">
+        <h5 class="mb-0 fw-semibold">Iniciar sesión</h5>
+        <div class="text-muted small">Accede con tu usuario y contraseña.</div>
+      </div>
+
+      <div class="card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+
+          {% if request.GET.next %}
+            <input type="hidden" name="next" value="{{ request.GET.next }}">
+          {% endif %}
+
+          <div class="mb-3">
+            <label class="form-label">Usuario</label>
+            <input type="text" name="username" class="form-control" value="{{ username|default:'' }}" autofocus>
+            <div class="form-text">Ej: yc26908567</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Contraseña</label>
+            <input type="password" name="password" class="form-control">
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="bi bi-box-arrow-in-right"></i> Entrar
+          </button>
+        </form>
+      </div>
+
+      <div class="card-footer bg-white border-0 text-muted small">
+        Si olvidaste tu contraseña, contacta al administrador.
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

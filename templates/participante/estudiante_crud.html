@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm border-0 rounded-4">
+
+  <div class="card-header bg-white border-0">
+    <h5 class="mb-0 fw-semibold">{{ titulo }}</h5>
+  </div>
+
+  <!-- FORM CREAR -->
+  <div class="card-body">
+
+    <!-- BUSCADOR PERSONA POR CÉDULA -->
+    <div class="row g-3 align-items-end mb-3">
+      <div class="col-md-4 position-relative">
+        <label class="form-label">Buscar por cédula</label>
+        <input type="text" id="cedulaSearch" class="form-control" placeholder="Escribe mínimo 5 dígitos...">
+        <div id="cedulaResults" class="list-group position-absolute w-100" style="z-index: 1050; display:none;"></div>
+      </div>
+
+      <div class="col-md-2">
+        <button type="button" id="btnBuscarPersona" class="btn btn-primary w-100" disabled>
+          <i class="bi bi-search"></i> Buscar
+        </button>
+      </div>
+
+
+    </div>
+
+    <!-- DATOS SOLO VISUALES (AYUDA AL OPERADOR) -->
+    <div class="row g-3 mt-3 mb-4">
+      <div class="col-md-2">
+        <label class="form-label">ID Persona</label>
+        <input type="text" id="persona_id" class="form-control" disabled>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Nombre</label>
+        <input type="text" id="persona_nombre" class="form-control" disabled>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Apellido</label>
+        <input type="text" id="persona_apellido" class="form-control" disabled>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Cédula</label>
+        <input type="text" id="persona_cedula" class="form-control" disabled>
+      </div>
+    </div>
+
+    <form method="post" class="row g-3 align-items-end">
+      {% csrf_token %}
+      <!-- Campo real que se enviará al POST -->
+      <input type="hidden" name="id_persona" id="personaIdHidden">
+      <!-- CAMPOS VISIBLES -->
+      <div class="col-md-3">
+        <label class="form-label">{{ form.id_carrera.label }}</label>
+        {{ form.id_carrera }}
+        {% if form.id_carrera.errors %}
+          <div class="text-danger small">{{ form.id_carrera.errors }}</div>
+        {% endif %}
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label">{{ form.id_mencion.label }}</label>
+        {{ form.id_mencion }}
+        {% if form.id_mencion.errors %}
+          <div class="text-danger small">{{ form.id_mencion.errors }}</div>
+        {% endif %}
+      </div>
+
+      <div class="col-md-1">
+        <label class="form-label">{{ form.activo.label }}</label>
+        {{ form.activo }}
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label">{{ form.fecha_creacion.label }}</label>
+        {{ form.fecha_creacion }}
+        {% if form.fecha_creacion.errors %}
+          <div class="text-danger small">{{ form.fecha_creacion.errors }}</div>
+        {% endif %}
+      </div>
+
+      <div class="col-md-2 d-flex justify-content-end pt-2">
+        <button type="submit" class="btn btn-success">
+          <i class="bi bi-plus-circle"></i> Agregar
+        </button>
+      </div>
+      <!-- CAMPOS OCULTOS (se envían, pero no se muestran) -->
+      {{ form.unidades_cred_aprobadas.as_hidden }}
+      {{ form.unidades_cred_cursadas.as_hidden }}
+      {{ form.unidades_cred_reprobadas.as_hidden }}
+      {{ form.fecha_fin.as_hidden }}
+
+      <!-- (NO renderizamos form.id_persona porque ya lo mandas con personaIdHidden) -->
+
+
+    </form>
+  </div>
+
+  <!-- TABLA -->
+  <div class="table-responsive px-3 pb-3 pt-5">
+    <table class="table table-hover align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>#</th>
+          <th>Persona</th>
+          <th>Carrera</th>
+          <th>Mención</th>
+          <th>Estatus</th>
+          <th>Fecha creación</th>
+          <th class="text-end">Acciones</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for obj in registros %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+
+          <td>
+            {{ obj.id_persona.cedula }} — {{ obj.id_persona.nombre }} {{ obj.id_persona.apellido }}
+          </td>
+          <td>{{ obj.id_carrera }}</td>
+          <td>{{ obj.id_mencion }}</td>
+          <td>{% if obj.activo %} ACTIVO{% else %} INACTIVO{% endif %}</td>
+          <td>{{ obj.fecha_creacion }}</td>
+
+          <td class="text-end">
+            <button
+              class="btn btn-sm btn-outline-primary"
+              data-bs-toggle="modal"
+              data-bs-target="#modalEditar"
+              data-url="{% url 'participante:estudiante_editar' obj.pk %}?next={{ request.get_full_path|urlencode }}"
+            >
+              <i class="bi bi-pencil"></i>
+            </button>
+
+            <form
+              method="post"
+              action="{% url 'participante:estudiante_eliminar' obj.pk %}?next={{ request.get_full_path|urlencode }}"
+              class="d-inline"
+            >
+              {% csrf_token %}
+              <button
+                type="submit"
+                class="btn btn-sm btn-outline-danger"
+                onclick="return confirm('¿Eliminar este registro?');"
+              >
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="100%" class="text-center text-muted">
+            No hay registros
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+<script src="{% static 'js/estudiante.js' %}"></script>
+
+{% include "participante/modal_editar.html" %}
+{% endblock %}
