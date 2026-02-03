@@ -1,22 +1,42 @@
 # seguridad/views.py
 from collections import defaultdict
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
+
 from django.contrib import messages
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
-from django.http import JsonResponse
-from django.urls.exceptions import NoReverseMatch
-from django.contrib.auth import authenticate, login, logout
+from django.http import JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.text import capfirst
 from django.views.decorators.http import require_GET
-from django.utils.http import url_has_allowed_host_and_scheme
-from django.urls import reverse
 from django.contrib.auth.decorators import login_required
+
 from gestion_administrativa.models import Persona
 from seguridad.models import PerfilUsuario
+from seguridad.decorators import requiere_rol as role_required
+
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.shortcuts import redirect, render
+from django.urls import reverse
+
+from seguridad.forms import PerfilPersonaUpdateForm, CambioPasswordForm
+from participante.models import Estudiante
+from profesor.models import Facilitador_has_Contrato, Facilitador
+
+# ==========================================================
+# CONFIG: redirecciones por rol (names reales que diste)
+# ==========================================================
+ROLE_REDIRECTS = {
+    "Master": "seguridad:inicio_master",
+    "Administrador": "seguridad:inicio_administrativo",
+    "Profesor": "seguridad:inicio_profesor",
+    "Participante": "seguridad:inicio_participante",
+}
 
 
 # ==========================================================
@@ -54,7 +74,6 @@ ACCION_ES = {
     "view": "Ver",
 }
 
-# Nombres amigables para cabeceras (opcional)
 APP_ES = {
     "gestion_administrativa": "Gestión Administrativa",
     "participante": "Participantes",
@@ -62,8 +81,6 @@ APP_ES = {
     "seguridad": "Seguridad",
 }
 
-# Override manual opcional para custom permissions
-# key = "app_label.codename"
 CUSTOM_LABELS = {
     "gestion_administrativa.ver_componentes": "Ver componentes",
     "gestion_administrativa.crear_componentes": "Crear componentes",
@@ -110,7 +127,7 @@ def _title_model(ct: ContentType) -> str:
 
 def _perm_label_and_help(perm: Permission) -> tuple[str, str]:
     """
-    Construye label + help para UI.
+    Construye label + help para UI:
     - add/change/delete/view -> "Crear/Editar/Eliminar/Ver <Modelo>"
     - custom -> overrides o fallback al name
     """
@@ -118,18 +135,15 @@ def _perm_label_and_help(perm: Permission) -> tuple[str, str]:
     codename = perm.codename
     key = f"{app_label}.{codename}"
 
-    # 1) override manual
     if key in CUSTOM_LABELS:
         label = CUSTOM_LABELS[key]
     else:
-        # 2) estándar Django: add_x / change_x / delete_x / view_x
         parts = codename.split("_", 1)
         if len(parts) == 2 and parts[0] in ACCION_ES:
             accion = ACCION_ES[parts[0]]
             modelo = _title_model(perm.content_type)
             label = f"{accion} {modelo}"
         else:
-            # 3) fallback: name de django
             label = (perm.name or key).strip()
             if label.lower().startswith("can "):
                 label = label[4:].strip()
@@ -145,34 +159,25 @@ def _perm_label_and_help(perm: Permission) -> tuple[str, str]:
 
 # ==========================================================
 # 1) Permisos por Rol (Group -> Permission)
-# (ALINEADO con tu HTML roles_permisos.html)
 # ==========================================================
 def roles_permisos(request):
     roles = Group.objects.all().order_by("name")
-
-    # El HTML usa 'rol' por nombre del grupo (r.name)
     rol_name = (request.GET.get("rol") or request.POST.get("rol") or "").strip()
 
-    rol = None
-    if rol_name:
-        rol = Group.objects.filter(name=rol_name).first()
+    rol = Group.objects.filter(name=rol_name).first() if rol_name else None
     if not rol and roles.exists():
         rol = roles.first()
 
-    # Si no hay roles, render vacío
     if not rol:
         return render(request, "seguridad/roles_permisos.html", {
             "roles": roles,
             "rol": None,
             "perms_por_app": {},
             "rol_perm_ids": set(),
-            "perm_meta": {},
-            "app_es": APP_ES,
         })
 
-    # POST: guardar permisos del rol
     if request.method == "POST":
-        perm_ids = request.POST.getlist("perms")  # lista de IDs Permission
+        perm_ids = request.POST.getlist("perms")
         perm_ids = [int(x) for x in perm_ids if str(x).isdigit()]
 
         try:
@@ -184,34 +189,19 @@ def roles_permisos(request):
 
         return redirect(f"{request.path}?rol={rol.name}")
 
-    # GET: construir permisos por app para el template
     perms = Permission.objects.select_related("content_type").order_by(
-        "content_type__app_label",
-        "codename"
+        "content_type__app_label", "codename"
     )
 
     perms_por_app = defaultdict(list)
-    perm_meta = {}  # (opcional futuro) por si luego quieres usar label/help distinto
-
     for p in perms:
         app = p.content_type.app_label
-
-        label, help_txt = _perm_label_and_help(p)
-
-        # IMPORTANTE:
-        # Tu HTML usa p.id, p.codename, p.name
-        # Entonces le pasamos dicts y dejamos p.name como label amigable
+        label, _help = _perm_label_and_help(p)
         perms_por_app[app].append({
             "id": p.id,
             "codename": p.codename,
-            "name": label,      # <- aquí va traducido/amigable
+            "name": label,
         })
-
-        perm_meta[p.id] = {
-            "label": label,
-            "help": help_txt,
-            "key": f"{app}.{p.codename}",
-        }
 
     rol_perm_ids = set(rol.permissions.values_list("id", flat=True))
 
@@ -220,8 +210,6 @@ def roles_permisos(request):
         "rol": rol,
         "perms_por_app": dict(perms_por_app),
         "rol_perm_ids": rol_perm_ids,
-        "perm_meta": perm_meta,   # no lo usa tu HTML actual, pero queda listo
-        "app_es": APP_ES,         # opcional futuro para headers amigables
     })
 
 
@@ -229,20 +217,11 @@ def roles_permisos(request):
 # 2) Usuarios -> Roles (User -> Group)
 # ==========================================================
 def usuarios_roles(request):
-    """
-    GET:
-      - sin persona_id: muestra pantalla vacía (solo buscador)
-      - con persona_id: carga PerfilUsuario -> user y lista roles
-
-    POST:
-      - asigna roles (groups) al user asociado a la persona
-    """
     roles = Group.objects.all().order_by("name")
 
     persona_id = (request.GET.get("persona_id") or request.POST.get("persona_id") or "").strip()
 
     persona = None
-    perfil = None
     user = None
 
     if persona_id:
@@ -284,132 +263,371 @@ def usuarios_roles(request):
     })
 
 
-# (si estabas usando esto en otra parte, lo dejamos)
-ROLES_FIJOS = ["Master", "Administrativo", "Profesor", "Participante"]
-APPS_PERMITIDAS = ["gestion_administrativa", "participante", "profesor", "seguridad"]
+# ---------------------------------------------------------------------
+# Redirecciones por rol (AJUSTADAS A TUS URLS ACTUALES)
+# ---------------------------------------------------------------------
+ROLE_REDIRECTS = {
+    "Master": "seguridad:inicio_master",
+    "Administrador": "seguridad:inicio_administrativo",
+    "Profesor": "seguridad:inicio_profesor",
+    "Participante": "seguridad:inicio_participante",
+}
 
-def _roles_queryset():
-    return Group.objects.filter(name__in=ROLES_FIJOS).order_by("name")
+SESSION_KEY_ROL_ACTIVO = "rol_activo"
 
 
+def _roles_usuario(user):
+    """Lista de nombres de grupos/roles del usuario."""
+    return list(user.groups.values_list("name", flat=True))
 
-def _redirect_next_login(request, fallback_url: str):
-    nxt = request.GET.get("next") or request.POST.get("next")
-    if nxt and url_has_allowed_host_and_scheme(nxt, allowed_hosts={request.get_host()}):
-        return redirect(nxt)
-    return redirect(fallback_url)
 
+def _set_rol_activo(request, rol: str):
+    """Guarda el rol activo en sesión."""
+    request.session[SESSION_KEY_ROL_ACTIVO] = rol
+    request.session.modified = True
+
+
+def _clear_rol_activo(request):
+    """Limpia el rol activo de sesión."""
+    if SESSION_KEY_ROL_ACTIVO in request.session:
+        del request.session[SESSION_KEY_ROL_ACTIVO]
+        request.session.modified = True
+
+
+def _redirect_por_rol(request, rol: str):
+    """Redirige al home según rol."""
+    destino = ROLE_REDIRECTS.get(rol)
+    if not destino:
+        return redirect("seguridad:menu_rol")
+    return redirect(destino)
+
+
+# ==========================================================
+# Helpers de roles (ROL ACTIVO en sesión)
+# ==========================================================
+
+ROL_SESSION_KEY = "rol_activo"
+
+# ✅ Ajusta aquí los nombres reales de tus grupos (si cambiaste "Administrativo" por "Administrador")
+ROLE_REDIRECTS = {
+    "Master": "seguridad:inicio_master",
+    "Administrativo": "seguridad:inicio_administrativo",   # si aún existe
+    "Administrador": "seguridad:inicio_administrativo",    # si ya lo cambiaste
+    "Profesor": "seguridad:inicio_profesor",
+    "Participante": "seguridad:inicio_participante",
+}
+
+def _roles_usuario(user):
+    # lista de nombres de grupos/roles
+    return list(user.groups.values_list("name", flat=True))
+
+def _set_rol_activo(request, rol: str):
+    request.session[ROL_SESSION_KEY] = rol
+
+def _clear_rol_activo(request):
+    request.session.pop(ROL_SESSION_KEY, None)
+
+def _redirect_por_rol(request, rol: str):
+    """
+    Redirige a la ruta configurada para el rol.
+    Si no existe mapeo, envía al menú para evitar loops.
+    """
+    destino = ROLE_REDIRECTS.get(rol)
+    if not destino:
+        messages.error(request, f"No hay ruta configurada para el rol: {rol}.")
+        return redirect("seguridad:menu_rol")
+
+    return redirect(destino)
+
+
+# ==========================================================
+# LOGIN
+# ==========================================================
 
 def login_view(request):
     """
-    Login con Django auth (username/password).
-    - Valida user activo
-    - Valida PerfilUsuario activo si existe
-    - Redirige a next o a seguridad:inicio
+    Login:
+    - Valida credenciales + user activo
+    - Valida PerfilUsuario activo (si existe)
+    - Respeta ?next si es seguro
+    - Si no hay next: decide por roles:
+        * 1 rol -> set rol_activo y redirige
+        * >1 rol -> menu_rol
+        * 0 rol -> warning y logout
     """
+    # Si ya está autenticado, no repitas login: decide por roles
     if request.user.is_authenticated:
-        return redirect("seguridad:inicio")
+        roles = _roles_usuario(request.user)
 
+        if len(roles) == 1:
+            _set_rol_activo(request, roles[0])
+            return _redirect_por_rol(request, roles[0])
+
+        if len(roles) > 1:
+            return redirect("seguridad:menu_rol")
+
+        messages.warning(request, "Tu usuario no tiene roles asignados. Contacta al administrador.")
+        _clear_rol_activo(request)
+        logout(request)
+        return redirect("seguridad:login")
+
+    # POST: intentar login
     if request.method == "POST":
         username = (request.POST.get("username") or "").strip()
         password = (request.POST.get("password") or "").strip()
 
         if not username or not password:
             messages.error(request, "Debes ingresar usuario y contraseña.")
-            return render(request, "seguridad/login.html", {
-                "username": username,
-            })
+            return render(request, "seguridad/login.html", {"username": username})
 
         user = authenticate(request, username=username, password=password)
-
         if user is None:
             messages.error(request, "Credenciales inválidas.")
-            return render(request, "seguridad/login.html", {
-                "username": username,
-            })
+            return render(request, "seguridad/login.html", {"username": username})
 
         if not user.is_active:
             messages.error(request, "Este usuario está inactivo.")
-            return render(request, "seguridad/login.html", {
-                "username": username,
-            })
+            return render(request, "seguridad/login.html", {"username": username})
 
-        # Validar PerfilUsuario si existe
         perfil = PerfilUsuario.objects.filter(user=user).select_related("persona").first()
         if perfil and not perfil.activo:
             messages.error(request, "El perfil del usuario está inactivo. Contacte al administrador.")
-            return render(request, "seguridad/login.html", {
-                "username": username,
-            })
+            return render(request, "seguridad/login.html", {"username": username})
 
+        # OK: login
         login(request, user)
-        messages.success(request, "Sesión iniciada correctamente.")
+        _clear_rol_activo(request)  # limpiamos por si venía de sesiones viejas
 
-        # 1) si hay next, lo respetamos
-        nxt = request.GET.get("next") or request.POST.get("next")
+        # 1) next (si existe y es seguro)
+        nxt = request.POST.get("next") or request.GET.get("next")
         if nxt and url_has_allowed_host_and_scheme(nxt, allowed_hosts={request.get_host()}):
             return redirect(nxt)
 
-        # 2) si no hay next, redirigir por rol (grupo)
-        fallback = reverse("seguridad:inicio")
-        return _redirect_by_role(user, fallback)
+        # 2) sin next: decidir por roles
+        roles = _roles_usuario(user)
+
+        if len(roles) == 1:
+            _set_rol_activo(request, roles[0])
+            return _redirect_por_rol(request, roles[0])
+
+        if len(roles) > 1:
+            return redirect("seguridad:menu_rol")
+
+        messages.warning(request, "Tu usuario no tiene roles asignados. Contacta al administrador.")
+        _clear_rol_activo(request)
+        logout(request)
+        return redirect("seguridad:login")
 
     # GET
     return render(request, "seguridad/login.html")
 
 
+# ==========================================================
+# LOGOUT
+# ==========================================================
+
 def logout_view(request):
+    _clear_rol_activo(request)
     if request.user.is_authenticated:
         logout(request)
         messages.info(request, "Sesión cerrada.")
     return redirect("seguridad:login")
 
 
+# ==========================================================
+# MENU DE SELECCIÓN DE ROL
+# url: /seguridad/login/menu  (según tu urls.py)
+# ==========================================================
+
 @login_required
-def inicio_view(request):
-    """
-    Landing simple post-login.
-    Luego lo puedes convertir en dashboard y/o redirección por grupos.
-    """
-    # ejemplo: mostrar grupos
-    grupos = list(request.user.groups.values_list("name", flat=True))
-    return render(request, "seguridad/inicio.html", {
-        "grupos": grupos,
-    })
+def menu_rol(request):
+    roles = _roles_usuario(request.user)
 
-# Prioridad de roles (si un usuario tiene varios)
-ROLE_PRIORITY = ["Master", "Administrativo", "Profesor", "Participante"]
+    # Si no tiene roles, lo sacamos
+    if len(roles) == 0:
+        messages.warning(request, "Tu usuario no tiene roles asignados. Contacta al administrador.")
+        _clear_rol_activo(request)
+        logout(request)
+        return redirect("seguridad:login")
 
-# A dónde enviar según rol
-ROLE_REDIRECTS = {
-    "Master": "gestion_administrativa:home",        # <-- ajusta si tu home tiene otro name
-    "Administrativo": "gestion_administrativa:home",# <-- ajusta si tu home tiene otro name
-    "Profesor": "profesor:facilitador",             # pantalla facilitadores
-    "Participante": "participante:estudiante",      # pantalla estudiantes
-}
+    # Si solo tiene 1 rol, no debería ver el menú
+    if len(roles) == 1:
+        _set_rol_activo(request, roles[0])
+        return _redirect_por_rol(request, roles[0])
 
-def _safe_reverse(name: str, fallback: str) -> str:
-    try:
-        return reverse(name)
-    except NoReverseMatch:
-        return fallback
+    # POST: el usuario eligió rol
+    if request.method == "POST":
+        rol_sel = (request.POST.get("rol") or "").strip()
 
-def _redirect_by_role(user, fallback_url: str):
-    """
-    Decide el destino por rol según prioridad.
-    Si no encuentra ruta válida, cae al fallback_url.
-    """
-    user_groups = set(user.groups.values_list("name", flat=True))
+        if rol_sel not in roles:
+            messages.error(request, "Rol inválido.")
+            return redirect("seguridad:menu_rol")
 
-    for role in ROLE_PRIORITY:
-        if role in user_groups:
-            route_name = ROLE_REDIRECTS.get(role)
-            if route_name:
-                return redirect(_safe_reverse(route_name, fallback_url))
+        _set_rol_activo(request, rol_sel)
+        return _redirect_por_rol(request, rol_sel)
 
-    return redirect(fallback_url)
+    # GET: render HTML del menú
+    return render(request, "seguridad/menu_rol.html", {"roles": roles})
+
+# ==========================================================
+# INICIOS POR ROL (prueba con HttpResponse)
+# ==========================================================
+
 
 
 @login_required
-def home(request):
+@role_required("Master")
+def home_master(request):
+    # Master usa el mismo home que Administrador
     return render(request, "seguridad/home_administrativo.html")
+
+
+@login_required
+@role_required("Administrador")
+def home_administrador(request):
+    # Administrador usa el mismo home que Master
+    return render(request, "seguridad/home_administrativo.html")
+
+
+@login_required
+@role_required("Profesor")
+def home_profesor(request):
+    return render(request, "seguridad/home_profesor.html")
+
+
+@login_required
+@role_required("Participante")
+def home_participante(request):
+    return render(request, "seguridad/home_participante.html")
+
+@login_required
+def perfil_view(request):
+    """
+    Perfil:
+    - Muestra datos básicos de Persona (solo lectura)
+    - Permite editar: telefono, correo, direccion
+    - Muestra resumen por tipo:
+        * Estudiante: carreras registradas + UC aprobadas/reprobadas/cursadas/faltantes
+        * Profesor: contrato activo (si existe)
+        * Administrador/Master: roles del usuario
+    """
+    perfil = getattr(request.user, "perfil_usuario", None)
+    if not perfil or not perfil.activo:
+        messages.error(request, "No tienes un perfil activo asociado. Contacta al administrador.")
+        return redirect("login")
+
+    persona = perfil.persona
+
+    # ---------------------------
+    # POST: guardar datos editables
+    # ---------------------------
+    if request.method == "POST":
+        form = PerfilPersonaUpdateForm(request.POST, instance=persona)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Datos actualizados correctamente.")
+            return redirect(reverse("seguridad:perfil"))
+        else:
+            messages.error(request, "Revisa los campos del formulario.")
+    else:
+        form = PerfilPersonaUpdateForm(instance=persona)
+
+    # ---------------------------
+    # Resumen por "perfiles académicos"
+    # (NO depende del rol_activo; es informativo)
+    # ---------------------------
+
+    # Estudiantes: puede tener varios registros (por persona)
+    estudiantes_qs = (
+        Estudiante.objects
+        .select_related("id_carrera", "id_mencion")
+        .filter(id_persona=persona)
+        .order_by("-id_estudiante")
+    )
+
+    carreras = []
+    resumen_uc = None
+    if estudiantes_qs.exists():
+        for e in estudiantes_qs:
+            carreras.append({
+                "carrera": getattr(e.id_carrera, "nombre", "—"),
+                "mencion": getattr(e.id_mencion, "nombre", "—"),
+                "activo": e.activo if hasattr(e, "activo") else True,
+                "fecha_fin": getattr(e, "fecha_fin", None),
+            })
+
+        # Tomamos el último registro como referencia de UC (puedes ajustar si quieres sumar)
+        e0 = estudiantes_qs.first()
+        faltantes = max(0, (e0.unidades_cred_reglamentaria or 0) - (e0.unidades_cred_aprobadas or 0))
+        resumen_uc = {
+            "aprobadas": e0.unidades_cred_aprobadas,
+            "reprobadas": e0.unidades_cred_reprobadas,
+            "cursadas": e0.unidades_cred_cursadas,
+            "reglamentaria": e0.unidades_cred_reglamentaria,
+            "faltantes": faltantes,
+        }
+
+    # Profesores: contrato activo del facilitador activo (si existe)
+    fac = (
+        Facilitador.objects
+        .select_related("id_persona")
+        .filter(id_persona=persona, activo=True, fecha_fin__isnull=True)
+        .order_by("-id_facilitador")
+        .first()
+    )
+
+    contrato_activo = None
+    if fac:
+        contrato_activo = (
+            Facilitador_has_Contrato.objects
+            .select_related("id_contrato", "id_estatu")
+            .filter(id_facilitador=fac, fecha_fin__isnull=True)
+            .order_by("-fecha_inicio")
+            .first()
+        )
+
+    # Roles del usuario (para Admin/Master o informativo)
+    roles = list(request.user.groups.values_list("name", flat=True))
+
+    context = {
+        "persona": persona,
+        "form": form,
+        "roles": roles,
+
+        "carreras": carreras,
+        "resumen_uc": resumen_uc,
+
+        "facilitador": fac,
+        "contrato_activo": contrato_activo,
+    }
+    return render(request, "seguridad/perfil.html", context)
+
+
+@login_required
+def cambiar_password_view(request):
+    """
+    Cambiar contraseña:
+    - POST valida contraseña actual y nueva
+    - Guarda contraseña
+    - CIERRA SESIÓN y manda a login
+    """
+    if request.method == "POST":
+        form = CambioPasswordForm(request.user, request.POST)
+        if form.is_valid():
+            new_password = form.cleaned_data["new_password1"]
+            request.user.set_password(new_password)
+            request.user.save()
+
+            # IMPORTANTE: cerramos sesión como pediste
+            from django.contrib.auth import logout
+            logout(request)
+
+            messages.success(request, "Contraseña actualizada. Inicia sesión nuevamente.")
+            return redirect("login")
+        else:
+            messages.error(request, "Revisa los datos del cambio de contraseña.")
+            return render(request, "seguridad/cambiar_password.html", {"form": form})
+
+    # GET
+    form = CambioPasswordForm(request.user)
+    return render(request, "seguridad/cambiar_password.html", {"form": form})

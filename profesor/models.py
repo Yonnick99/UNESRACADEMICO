@@ -2,7 +2,9 @@
 from django.core.validators import MinValueValidator
 from django.utils import timezone
 from django.db import models
-
+from django.core.validators import MinValueValidator
+from django.core.exceptions import ValidationError
+from django.db.models import Q, F
 
 class Facilitador(models.Model):
     id_facilitador = models.AutoField(primary_key=True)
@@ -112,3 +114,29 @@ class Asignaturas_has_Facilitador(models.Model):
 
     def __str__(self):
         return f"{self.id_asignatura_id} - {self.id_facilitador_id}"
+
+
+class FacilitadorDisponibilidad(models.Model):
+    id = models.BigAutoField(primary_key=True)
+
+    id_facilitador = models.OneToOneField(
+        "profesor.Facilitador",
+        on_delete=models.RESTRICT,
+        db_column="id_facilitador",
+        related_name="disponibilidad",
+    )
+
+    horas_lunes = models.PositiveIntegerField(default=0)
+    horas_martes = models.PositiveIntegerField(default=0)
+    horas_miercoles = models.PositiveIntegerField(default=0)
+    horas_jueves = models.PositiveIntegerField(default=0)
+    horas_viernes = models.PositiveIntegerField(default=0)
+
+    # ✅ NUEVO
+    horas_sabado = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        db_table = "facilitador_disponibilidad"
+
+    def __str__(self):
+        return f"Disponibilidad Facilitador {self.id_facilitador.id}"

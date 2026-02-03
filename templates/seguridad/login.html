@@ -1,46 +1,153 @@
-{% extends "base.html" %}
 {% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UNESR Académico | Iniciar sesión</title>
 
-{% block title %}Iniciar sesión{% endblock %}
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+|  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 
-{% block content %}
-<div class="row justify-content-center">
-  <div class="col-md-5 col-lg-4">
-    <div class="card shadow-sm border-0 rounded-4">
-      <div class="card-header bg-white border-0">
-        <h5 class="mb-0 fw-semibold">Iniciar sesión</h5>
-        <div class="text-muted small">Accede con tu usuario y contraseña.</div>
-      </div>
+  <!-- ✅ CSS externo -->
+  <link rel="stylesheet" href="{% static 'css/login.css' %}">
+</head>
 
-      <div class="card-body">
-        <form method="post" novalidate>
-          {% csrf_token %}
+<body>
+  <main class="login-shell container">
+    <div class="login-card">
+      <div class="row g-0">
 
-          {% if request.GET.next %}
-            <input type="hidden" name="next" value="{{ request.GET.next }}">
+        <!-- En móvil: este panel queda arriba -->
+        <div class="col-md-6 order-1 order-md-2">
+          <div class="panel brand-panel">
+            <img
+              src="{% static 'img/logo-unesr.jpeg' %}"
+              class="brand-logo"
+              alt="Logo UNESR"
+            >
+
+            <div class="quote">
+              “Enseñen, y tendrán quien sepa; eduquen, y tendrán quien haga.”
+              <small>— Simón Rodríguez</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- En móvil: este panel queda abajo -->
+               <!-- Content -->
+      <main class="content">
+        <div class="container-fluid content__container">
+          {% if messages %}
+            <div class="container-fluid pt-3">
+              {% for message in messages %}
+                {% if message.tags == "error" %}
+                  {% with tag="danger" %}
+                    <div class="alert alert-{{ tag }} alert-dismissible fade show" role="alert">
+                      {{ message }}
+                      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                  {% endwith %}
+                {% else %}
+                  <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                  </div>
+                {% endif %}
+              {% endfor %}
+            </div>
           {% endif %}
 
-          <div class="mb-3">
-            <label class="form-label">Usuario</label>
-            <input type="text" name="username" class="form-control" value="{{ username|default:'' }}" autofocus>
-            <div class="form-text">Ej: yc26908567</div>
+          {% block content %}
+            <!-- Contenido específico de cada página -->
+          {% endblock %}
+        </div>
+      </main>
+        <div class="col-md-6 order-2 order-md-1">
+          <div class="panel">
+            <div class="mb-4">
+              <h4 class="brand-title">UNESR Académico</h4>
+              <div class="brand-subtitle">Sistema Integral de Gestión Universitaria</div>
+            </div>
+
+            <h5 class="login-title">Iniciar sesión</h5>
+            <div class="hint mb-3">Accede con tu usuario y contraseña.</div>
+
+            <form method="post"  class="row g-3 needs-validation" novalidate>
+              {% csrf_token %}
+
+              {% if request.GET.next %}
+                <input type="hidden" name="next" value="{{ request.GET.next }}">
+              {% endif %}
+
+              <div class="mb-3">
+                <label class="form-label">Usuario</label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-person"></i></span>
+                  <input type="text" name="username" class="form-control" value="{{ username|default:'' }}"
+                    autofocus autocomplete="username" placeholder="Ej: yc26908567" required />
+                </div>
+                <div class="hint mt-1">Usa tu clave institucional.</div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Contraseña</label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                  <input
+                    type="password"
+                    name="password"
+                    class="form-control"
+                    autocomplete="current-password"
+                    placeholder="••••••••" required
+                  >
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-primary w-100">
+                <i class="bi bi-box-arrow-in-right"></i> Entrar
+              </button>
+
+              <!-- Botones auxiliares (por ahora sin lógica) -->
+              <div class="d-flex flex-wrap gap-2 mt-3">
+                <a href="#" class="btn btn-outline-secondary btn-sm btn-help flex-fill">
+                  <i class="bi bi-person-question"></i> Olvidé mi usuario
+                </a>
+                <a href="#" class="btn btn-outline-secondary btn-sm btn-help flex-fill">
+                  <i class="bi bi-key"></i> Olvidé mi contraseña
+                </a>
+              </div>
+
+              <div class="hint mt-3">
+                Si olvidaste tu contraseña, contacta al administrador del sistema.
+              </div>
+            </form>
           </div>
+        </div>
 
-          <div class="mb-3">
-            <label class="form-label">Contraseña</label>
-            <input type="password" name="password" class="form-control">
-          </div>
-
-          <button type="submit" class="btn btn-primary w-100">
-            <i class="bi bi-box-arrow-in-right"></i> Entrar
-          </button>
-        </form>
-      </div>
-
-      <div class="card-footer bg-white border-0 text-muted small">
-        Si olvidaste tu contraseña, contacta al administrador.
       </div>
     </div>
-  </div>
-</div>
-{% endblock %}
+  </main>
+
+  <!-- Bootstrap JS (opcional) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+(() => {
+  "use strict";
+  const forms = document.querySelectorAll(".needs-validation");
+  Array.from(forms).forEach(form => {
+    form.addEventListener("submit", event => {
+      if (!form.checkValidity()) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      form.classList.add("was-validated");
+    }, false);
+  });
+})();
+</script>
+
+</body>
+</html>

@@ -4,7 +4,6 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from django.db.models import Q, F
 
-
 class Carrera (models.Model):
     id_carrera = models.AutoField(primary_key=True)
     nombre = models.CharField(max_length=120)
@@ -81,6 +80,10 @@ class Asignatura(models.Model):
     class Meta:
         db_table = "Asignatura"
 
+    def __str__(self):
+        return f" {self.nombre} - {self.codigo} "
+
+
 class Persona(models.Model):
     SEXO_FEMENINO = "F"
     SEXO_MASCULINO = "M"
@@ -155,6 +158,7 @@ class Periodo_Academico(models.Model):
 
     class Meta:
         db_table = "Periodo_Academico"
+     
 
 class Temp_Asignaturas_has_Facilitador_has_aula(models.Model):
     id_asignaturas_has_Facilitador_has_aula = models.AutoField(primary_key=True)
@@ -212,31 +216,238 @@ class Temp_Asignaturas_has_Facilitador_has_aula(models.Model):
     #  - excl_facilitador_horario_periodo
     # deben crearse vía migración RunSQL (Django no lo modela nativamente).
 
+
+# =========================
+# PRELACIONES
+# =========================
+
 class Prelaciones(models.Model):
     id_prelacion = models.AutoField(primary_key=True)
     id_asignatura = models.ForeignKey(
         Asignatura,
         on_delete=models.CASCADE,
         db_column="id_asignatura",
-        related_name="Prelaciones_de_set",
+        related_name="prelaciones",
     )
     id_asignatura_antecesora = models.ForeignKey(
         Asignatura,
         on_delete=models.RESTRICT,
         db_column="id_asignatura_antecesora",
-        related_name="Prelaciones_antecesora_set",
+        related_name="es_antecesora_de",
     )
 
     class Meta:
         db_table = "Prelaciones"
         constraints = [
-            models.UniqueConstraint(fields=["id_asignatura"], name="uq_prel_unica"),
+            models.UniqueConstraint(
+                fields=["id_asignatura", "id_asignatura_antecesora"],
+                name="uq_prel_asig_antecesora",
+            ),
             models.CheckConstraint(
                 condition=~Q(id_asignatura=F("id_asignatura_antecesora")),
-                name="ck_no_ciclo",
+                name="ck_prel_no_ciclo",
             ),
         ]
 
+    def __str__(self):
+        return f"{self.id_asignatura} ← {self.id_asignatura_antecesora}"
+
+
+# =========================
+# OFERTA ACADÉMICA
+# =========================
+
+class Seccion_Oferta(models.Model):
+    id_seccion_oferta = models.BigAutoField(primary_key=True)
+
+    id_periodo = models.ForeignKey(
+        Periodo_Academico,
+        on_delete=models.RESTRICT,
+        db_column="id_periodo",
+        related_name="secciones_ofertadas",
+    )
+
+    id_asignatura = models.ForeignKey(
+        Asignatura,
+        on_delete=models.RESTRICT,
+        db_column="id_asignatura",
+        related_name="secciones_ofertadas",
+    )
+
+    id_facilitador = models.ForeignKey(
+        "profesor.Facilitador",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        db_column="id_facilitador",
+        related_name="secciones_asignadas",
+    )
+
+    id_aula = models.ForeignKey(
+        aula,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        db_column="id_aula",
+        related_name="secciones_ofertadas",
+    )
+
+    id_carrera = models.ForeignKey(
+        Carrera,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        db_column="id_carrera",
+        related_name="secciones_ofertadas",
+    )
+
+    id_mencion = models.ForeignKey(
+        Mencion,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        db_column="id_mencion",
+        related_name="secciones_ofertadas",
+    )
+
+    seccion = models.CharField(max_length=20)
+    cupos = models.IntegerField(default=30, validators=[MinValueValidator(1)])
+    presencial = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "Seccion_Oferta"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["id_periodo", "id_asignatura", "seccion"],
+                name="uq_seccion_oferta_periodo_asig_seccion",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.id_periodo} - {self.id_asignatura} - {self.seccion}"
+
+
+class Seccion_Oferta_Horario(models.Model):
+    id_horario = models.BigAutoField(primary_key=True)
+
+    id_seccion_oferta = models.ForeignKey(
+        Seccion_Oferta,
+        on_delete=models.CASCADE,
+        db_column="id_seccion_oferta",
+        related_name="horarios",
+    )
+
+    dia = models.CharField(
+        max_length=3,
+        choices=[
+            ("LUN", "Lunes"),
+            ("MAR", "Martes"),
+            ("MIE", "Miércoles"),
+            ("JUE", "Jueves"),
+            ("VIE", "Viernes"),
+            ("SAB", "Sábado"),
+        ],
+    )
+
+    hora_inicio = models.TimeField()
+    hora_fin = models.TimeField()
+
+    class Meta:
+        db_table = "Seccion_Oferta_Horario"
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(hora_fin__gt=F("hora_inicio")),
+                name="ck_seccion_horario_valido",
+            ),
+            models.UniqueConstraint(
+                fields=["id_seccion_oferta", "dia", "hora_inicio", "hora_fin"],
+                name="uq_seccion_bloque_unico",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.id_seccion_oferta_id} - {self.dia} {self.hora_inicio}-{self.hora_fin}"
+
+
+# =========================
+# INSCRIPCIÓN
+# =========================
+
+class Inscripcion_Seccion(models.Model):
+    id_inscripcion_seccion = models.BigAutoField(primary_key=True)
+
+    id_estudiante = models.ForeignKey(
+        "participante.Estudiante",
+        on_delete=models.RESTRICT,
+        db_column="id_estudiante",
+        related_name="inscripciones_seccion",
+    )
+
+    id_seccion_oferta = models.ForeignKey(
+        Seccion_Oferta,
+        on_delete=models.RESTRICT,
+        db_column="id_seccion_oferta",
+        related_name="inscripciones",
+    )
+
+    nota = models.DecimalField(
+        max_digits=3,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1.00), MaxValueValidator(5.00)],
+    )
+
+    creado_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "Inscripcion_Seccion"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["id_estudiante", "id_seccion_oferta"],
+                name="uq_insc_estudiante_seccion",
+            ),
+            models.CheckConstraint(
+                condition=Q(nota__isnull=True)
+                | (Q(nota__gte=1.00) & Q(nota__lte=5.00)),
+                name="ck_insc_nota_rango",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.id_estudiante_id} → {self.id_seccion_oferta}"
+
+
+class Inscripcion_Seccion_Horario(models.Model):
+    id_horario_inscrito = models.BigAutoField(primary_key=True)
+
+    id_inscripcion_seccion = models.ForeignKey(
+        Inscripcion_Seccion,
+        on_delete=models.CASCADE,
+        db_column="id_inscripcion_seccion",
+        related_name="horarios",
+    )
+
+    dia = models.CharField(max_length=3)
+    hora_inicio = models.TimeField()
+    hora_fin = models.TimeField()
+
+    class Meta:
+        db_table = "Inscripcion_Seccion_Horario"
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(hora_fin__gt=F("hora_inicio")),
+                name="ck_insc_horario_valido",
+            ),
+            models.UniqueConstraint(
+                fields=["id_inscripcion_seccion", "dia", "hora_inicio", "hora_fin"],
+                name="uq_insc_bloque_unico",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.id_inscripcion_seccion_id} - {self.dia} {self.hora_inicio}-{self.hora_fin}"
+    
 
 
 #class Estudiante(models.Model):

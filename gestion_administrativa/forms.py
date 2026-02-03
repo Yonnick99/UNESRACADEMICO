@@ -11,6 +11,7 @@ from .models import (
     aula,
     Asignatura,
     Persona,
+    Prelaciones,
 )
 
 # gestion_administrativa/forms_persona.py
@@ -163,3 +164,47 @@ class AsignaturaForm(BootstrapModelForm):
         if uc is not None and uc <= 0:
             raise forms.ValidationError("Las unidades de crédito deben ser mayores a 0.")
         return uc
+
+
+class PeriodoAcademicoForm(BootstrapModelForm):
+    class Meta:
+        model = Periodo_Academico
+        fields = [
+            "nombre",
+            "fecha_inicio",
+            "fecha_fin",
+            "id_estatu",
+        ]
+
+        widgets = {
+            "fecha_inicio": forms.DateInput(
+                attrs={"type": "date"}
+            ),
+            "fecha_fin": forms.DateInput(
+                attrs={"type": "date"}
+            ),
+        }
+
+class PrelacionesForm(BootstrapModelForm):
+    class Meta:
+        model = Prelaciones
+        fields = [
+            "id_asignatura",
+            "id_asignatura_antecesora",
+        ]
+
+    def clean(self):
+        """
+        Validación a nivel de formulario (extra a los constraints de BD):
+        evita que la asignatura sea su propia prelación.
+        """
+        cleaned_data = super().clean()
+        asig = cleaned_data.get("id_asignatura")
+        ante = cleaned_data.get("id_asignatura_antecesora")
+
+        if asig and ante and asig == ante:
+            raise forms.ValidationError(
+                "La asignatura no puede ser prelación de sí misma."
+            )
+
+        return cleaned_data

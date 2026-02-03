@@ -13,6 +13,8 @@ urlpatterns = [
     # AJAX buscador por cédula (autocomplete)
      #path("ajax/personas-cedula/", views.ajax_buscar_persona_por_cedula, name="ajax_personas_cedula"),
     path("ajax/personas-cedula/", views.ajax_personas_cedula, name="ajax_personas_cedula"),
+    path("disponibilidad/", views.disponibilidad, name="disponibilidad"),
+    path("asignaturas/", views.gestionar_asignaturas, name="asignaturas"),
+    path("notas/", views.cargar_notas, name="cargar_notas"),
     
-
 ]

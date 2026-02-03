@@ -8,8 +8,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Q
-from .forms import (EstatuForm, MencionForm, CarreraForm, TipoMateriaForm, PeriodoAcademicoForm, TipoContratoForm, PisoForm, AulaForm, AsignaturaForm, PersonaForm)
-from .models import (estatu,Mencion,Carrera,Tipo_Materia,Periodo_Academico,Tipo_Contrato,Piso,aula,Asignatura,Persona)
+from .forms import (EstatuForm, MencionForm, CarreraForm, TipoMateriaForm, PeriodoAcademicoForm, TipoContratoForm, PisoForm, AulaForm, AsignaturaForm, PersonaForm, PrelacionesForm)
+from .models import (estatu,Mencion,Carrera,Tipo_Materia,Periodo_Academico,Tipo_Contrato,Piso,aula,Asignatura,Persona,Prelaciones   )
 
 # ============================================================
 # Helpers de validación/errores (Create/Update/Delete)
@@ -407,6 +407,34 @@ def aula_delete(request, pk: int):
     return catalogo_delete(request, model=aula, pk=pk)
 
 
+
+
+def prelaciones_list(request):
+    return catalogo_list_create(
+        request,
+        model=Prelaciones,
+        form_class=PrelacionesForm,
+        template_name="gestion_administrativa/crud_base.html",
+        titulo="Prelaciones",
+    )
+
+
+
+def prelaciones_update(request, pk: int):
+    return catalogo_update(
+        request,
+        model=Prelaciones,
+        form_class=PrelacionesForm,
+        template_name="gestion_administrativa/crud_base.html",
+        pk=pk,
+        titulo="Editar Prelación",
+    )
+
+
+
+def prelaciones_delete(request, pk: int):
+    return catalogo_delete(request, model=Prelaciones, pk=pk)
+
 # ============================================================
 # 10) ASIGNATURA
 # ============================================================
@@ -431,6 +459,43 @@ def asignatura_update(request, pk: int):
         titulo="Editar Asignatura",
     )
 
+
+def periodo_list(request):
+    """
+    Listado + creación de Períodos Académicos
+    """
+    return catalogo_list_create(
+        request,
+        model=Periodo_Academico,
+        form_class=PeriodoAcademicoForm,
+        template_name="gestion_administrativa/crud_base.html",
+        titulo="Períodos Académicos",
+    )
+
+
+def periodo_update(request, pk: int):
+    """
+    Edición de Período Académico
+    """
+    return catalogo_update(
+        request,
+        model=Periodo_Academico,
+        form_class=PeriodoAcademicoForm,
+        template_name="gestion_administrativa/crud_base.html",
+        pk=pk,
+        titulo="Editar Período Académico",
+    )
+
+
+def periodo_delete(request, pk: int):
+    """
+    Eliminación de Período Académico
+    """
+    return catalogo_delete(
+        request,
+        model=Periodo_Academico,
+        pk=pk,
+    )
 
 def asignatura_delete(request, pk: int):
     return catalogo_delete(request, model=Asignatura, pk=pk)

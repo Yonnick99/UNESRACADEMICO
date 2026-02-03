@@ -96,9 +96,10 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-LOGIN_URL = "seguridad:login"
-LOGIN_REDIRECT_URL = "interfaz:dashboard"
-LOGOUT_REDIRECT_URL = "seguridad:login"
+LOGIN_URL = "/login/"
+LOGIN_REDIRECT_URL = "/"         # o a donde quieres enviarlo al entrar
+LOGOUT_REDIRECT_URL = "/login/"  # opcional, recomendado
+
 
 
 

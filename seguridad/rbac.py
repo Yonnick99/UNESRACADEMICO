@@ -1,11 +1,11 @@
-from seguridad.models import PersonaRol
+from seguridad.models import PersonaHasRoles
 
 def obtener_roles_persona(persona):
     """
     Retorna una lista de nombres de roles activos de la persona.
     """
     return list(
-        PersonaRol.objects.filter(
+        PersonaHasRoles.objects.filter(
             id_persona=persona,
             activo=True
         ).select_related("id_rol")
@@ -17,7 +17,7 @@ def persona_tiene_rol(persona, nombre_rol):
     """
     Verifica si la persona tiene un rol activo específico.
     """
-    return PersonaRol.objects.filter(
+    return PersonaHasRoles.objects.filter(
         id_persona=persona,
         id_rol__nombre=nombre_rol,
         activo=True
@@ -28,7 +28,7 @@ def persona_tiene_alguno(persona, roles):
     """
     roles: iterable de nombres de rol
     """
-    return PersonaRol.objects.filter(
+    return PersonaHasRoles.objects.filter(
         id_persona=persona,
         id_rol__nombre__in=roles,
         activo=True

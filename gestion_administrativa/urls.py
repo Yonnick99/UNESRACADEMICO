@@ -77,6 +77,17 @@ urlpatterns = [
     path("tipos-materia/<int:pk>/editar/", views.tipo_materia_update, name="tipo_materia_editar"),
     path("tipos-materia/<int:pk>/eliminar/", views.tipo_materia_delete, name="tipo_materia_eliminar"),
 
+    path("prelaciones/", views.prelaciones_list, name="prelaciones"),
+    path("prelaciones/<int:pk>/editar/", views.prelaciones_update, name="prelaciones_editar"),
+    path("prelaciones/<int:pk>/eliminar/", views.prelaciones_delete, name="prelaciones_eliminar"),
+
+    # =========================
+    # TIPOS DE MATERIA
+    # =========================
+    path("periodos/", views.periodo_list, name="periodo"),
+    path("periodos/<int:pk>/editar/", views.periodo_update, name="periodo_academico_editar"),
+    path("periodos/<int:pk>/eliminar/", views.periodo_delete, name="periodo_academico_eliminar"),
+
     # =========================
     # TIPOS DE CONTRATO
     # =========================

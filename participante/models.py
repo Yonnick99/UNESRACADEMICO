@@ -33,6 +33,7 @@ class Estudiante(models.Model):
     unidades_cred_aprobadas = models.IntegerField(default=0)
     unidades_cred_cursadas = models.IntegerField(default=0)
     unidades_cred_reprobadas = models.IntegerField(default=0)
+    unidades_cred_reglamentaria = models.IntegerField(default=175)
     activo = models.BooleanField(default=True)
     fecha_creacion = models.DateField(default=timezone.now, verbose_name="Fecha de Registro")
     fecha_fin = models.DateField(null=True, blank=True)
@@ -173,3 +174,5 @@ class Materia_Inscrita(models.Model):
 
     def __str__(self):
         return f"{self.id_estudiante_id} - {self.id_asignatura_id} - {self.id_periodo_id}"
+
+

@@ -82,7 +82,7 @@ class PersonaHasRoles(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.id_persona_id} - {self.id_rol_id} ({'Activo' if self.activo else 'Inactivo'})"
+        return f"{self.id_persona.nombre} - {self.id_rol.nombre} ({'Activo' if self.activo else 'Inactivo'})"
 
 
 # ============================================================
